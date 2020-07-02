@@ -1,0 +1,82 @@
+---
+title: "Summit County COVID-19 Dashboard (NY Times Dataset)"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(shiny)
+
+covid <- read_csv('./us-counties.csv')
+summit <- covid %>% filter(county=="Summit" & state=="Colorado")
+summit$cases.1.delta = c(NA, diff(summit$cases, lag = 1))
+june <- summit %>% filter(date >="2020-06-01" & date <="2020-06-30")
+june$cases.1.delta = c(NA, diff(june$cases, lag=1))
+```
+
+```{r}
+# Reactive that returns the whole dataset if there is no brush
+selectedData <- reactive({
+  data <- brushedPoints(summit, input$plot1_brush)
+  if (nrow(data) == 0)
+    data <- summit
+  data
+})
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Year to Date Cases
+
+```{r}
+ggplot(data = summit) + 
+       geom_point(mapping = aes(x=date, y=cases)) + 
+       geom_smooth(mapping = aes(x=date, y=cases))
+```
+
+
+### Cases for June, 2020
+
+```{r}
+ggplot(data = june) + 
+       geom_point(mapping = aes(x=date, y=cases)) + 
+       geom_smooth(mapping = aes(x=date, y=cases))
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### New Cases per Day
+
+```{r}
+ggplot(data = summit) + 
+       geom_point(mapping = aes(x=date, y=cases.1.delta)) + 
+       geom_smooth(mapping = aes(x=date, y=cases.1.delta))
+```
+
+### New Cases per Day in June
+
+```{r}
+ggplot(data = june) + 
+       geom_point(mapping = aes(x=date, y=cases.1.delta)) + 
+       geom_smooth(mapping = aes(x=date, y=cases.1.delta))
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+### Complete Dataset
+
+```{r}
+renderTable({
+  selectedData()
+})
+```
+
