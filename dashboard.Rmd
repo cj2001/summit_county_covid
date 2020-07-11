@@ -1,5 +1,5 @@
 ---
-title: "Summit County COVID-19 Dashboard. Last updated 2020-07-05."
+title: "Summit County COVID-19 Dashboard. Last updated 2020-07-11."
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -12,6 +12,7 @@ runtime: shiny
 library(flexdashboard)
 library(tidyverse)
 library(shiny)
+library(rmarkdown)
 
 covid <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
 summit <- covid %>% filter(county=="Summit" & state=="Colorado")
@@ -42,6 +43,8 @@ Some notes about this data...
 
 - The data herein have been obtained from the [New York Times Dataset](https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv), which is updated daily and available for free download.
 
+- The blue lines represent a mathematical fit to the existing data. The grey shaded sections are the calculated uncertainty in that fit.
+
 - The data might not be updated over the weekend, or the counts might be artificially low due to less staff at the labs over the weekends.
 
 - I am maintaining this dashboard on my own and through no assistance or funding. It is open source and anyone is free to download it [here](https://github.com/cj2001/summit_county_covid).  Note that I have yet to add in automated updating, so this is still a manual process.
@@ -55,9 +58,9 @@ Column {data-width=350}
 ### Total Year to Date Cases
 
 ```{r}
-ggplot(data = summit) + 
-       geom_point(mapping = aes(x=date, y=cases)) + 
-       geom_smooth(mapping = aes(x=date, y=cases))
+ggplot(data = summit, aes(x=date, y=cases)) +
+       stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
+       geom_point()
 ```
 
 
@@ -83,9 +86,9 @@ ggplot(data = summit) +
 ### New Cases in the Last 30 Days
 
 ```{r}
-#last_30_agg <- aggregate(last_30, )
-ggplot(data = last_30) + 
-       geom_line(mapping = aes(x=date, y=new_cases))
+type <- c(last_30$cases)
+ggplot(data = last_30, aes(x=date, y=new_cases)) +
+       geom_bar(stat="identity", aes(fill = type), show.legend = FALSE)
 ```
 
 
