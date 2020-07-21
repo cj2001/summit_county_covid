@@ -1,5 +1,5 @@
 ---
-title: "Summit County COVID-19 Dashboard. Last updated 2020-07-11."
+title: "Summit County COVID-19 Dashboard. Last updated 2020-07-18."
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -13,26 +13,18 @@ library(flexdashboard)
 library(tidyverse)
 library(shiny)
 library(rmarkdown)
+library(plotly)
 
 covid <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
+
 summit <- covid %>% filter(county=="Summit" & state=="Colorado")
-summit$new_cases = c(NA, diff(summit$cases, lag = 1))
-june <- summit %>% filter(date >="2020-06-01" & date <="2020-06-30")
-june$new_cases = c(NA, diff(june$cases, lag=1))
-last_30 <- tail(summit, 30)
-last_30$new_cases = c(NA, diff(last_30$cases, lag=1))
+summit$new_cases <- c(NA, diff(summit$cases, lag = 1))
+last_30_summit <- tail(summit, 30)
+last_30_summit$new_cases <- c(NA, diff(last_30_summit$cases, lag=1))
 ```
 
-```{r}
-# Reactive that returns the whole dataset if there is no brush
-selectedData <- reactive({
-  data <- brushedPoints(summit, input$plot1_brush)
-  if (nrow(data) == 0)
-    data <- summit
-  data
-})
-```
-
+Plots
+=====================================
 Column {.sidebar}
 -----------------------------------------------------------------------
 Some notes about this data...
@@ -41,7 +33,11 @@ Some notes about this data...
 
 - __This dashboard is not intended to provide conclusions!__  If you want to draw conclusions on what you see here, that is up to you.
 
-- The data herein have been obtained from the [New York Times Dataset](https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv), which is updated daily and available for free download.
+- __There are sometimes negative numbers in the number of cases!__  This could be from a variety of reasons, including a case being removed from Summit County and assigned to a different county or even just a typo.  This dashboard presents the raw data and, without additional information, I am not correcting it in any way.
+
+- __There are sometimes no new cases!__  These show up as missing bars on the plot of the new cases for the last 30 days. While this frequently correlates with the weekends (see below), it also shows that there were no new positive tests for that day.  There are also occasional updates by the NY Times to the database, which can result in a few days data not being immediately updated.
+
+- The data herein have been obtained from the [New York Times Dataset](https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv), which is updated daily and available for free download.  This data is not impacted by the recent move from the CDC collection to the White House because the CDC data is specifically on hospitalization whereas this data is only on testing.  So it is not impacted by this move.
 
 - The blue lines represent a mathematical fit to the existing data. The grey shaded sections are the calculated uncertainty in that fit.
 
@@ -51,54 +47,66 @@ Some notes about this data...
 
 - For any questions about this dashboard, please contact @cjisalock on Twitter (keep it respectful or you will be blocked!).
 
-
-Column {data-width=350}
+Column 
 -----------------------------------------------------------------------
 
 ### Total Year to Date Cases
 
 ```{r}
-ggplot(data = summit, aes(x=date, y=cases)) +
-       stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
-       geom_point()
+ggplotly(
+  ggplot(data = summit, aes(x=date, y=cases)) +
+    stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
+    geom_point() +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
 ```
 
 
 ### Total Cases for the Last 30 Days
 
 ```{r}
-ggplot(data = last_30) + 
-       geom_point(mapping = aes(x=date, y=cases)) + 
-       geom_smooth(mapping = aes(x=date, y=cases))
+ggplotly(
+  ggplot(data = last_30_summit) + 
+    geom_point(mapping = aes(x=date, y=cases)) + 
+    geom_smooth(mapping = aes(x=date, y=cases)) +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
 ```
 
-Column {data-width=350}
+Column 
 -----------------------------------------------------------------------
 
 ### New Cases per Day
 
 ```{r}
-ggplot(data = summit) + 
-       geom_point(mapping = aes(x=date, y=new_cases)) + 
-       geom_smooth(mapping = aes(x=date, y=new_cases))
+ggplotly(
+  ggplot(data = summit) + 
+    geom_point(mapping = aes(x=date, y=new_cases)) + 
+    geom_smooth(mapping = aes(x=date, y=new_cases)) +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
 ```
 
 ### New Cases in the Last 30 Days
 
 ```{r}
-type <- c(last_30$cases)
-ggplot(data = last_30, aes(x=date, y=new_cases)) +
-       geom_bar(stat="identity", aes(fill = type), show.legend = FALSE)
+type <- c(last_30_summit$cases)
+ggplotly(
+  ggplot(data = last_30_summit, aes(x=date, y=new_cases)) +
+    geom_bar(stat="identity", aes(fill = type), show.legend = FALSE) +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
 ```
 
-
-Column {data-width=350}
+Raw Data
+=====================================
+Column 
 -----------------------------------------------------------------------
 ### Raw Data
 
 ```{r}
+summit$date <- format(summit$date) # Puts dates in YYYY-MM-DD format for table
 renderTable({
-  selectedData()
+  summit
 })
 ```
-
