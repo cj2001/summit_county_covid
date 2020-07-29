@@ -3,9 +3,9 @@
 I had originally created this dashboard to show the data for Summit County, CO.  However, I have updated it now to show 6 different counties:
 
 - Eagle, CO (Vail)
-- Grand, CO 
-- Gunnison, CO
-- San Miguel, CO
+- Grand, CO (Winter Park)
+- Gunnison, CO (Crested Butte)
+- San Miguel, CO (Telluride)
 - Pitkin, CO (Aspen Mountain, Aspen Highlands, Snowmass, Buttermilk)
 - Summit, CO (Breckenridge, Keystone, Copper, Arapahoe Basin)
 
