@@ -1,5 +1,5 @@
 ---
-title: "Colorado Ski County COVID-19 Dashboard. Last updated 2020-07-29."
+title: "Colorado Ski County COVID-19 Dashboard. Last updated 2020-12-08."
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -18,23 +18,28 @@ library(dplyr)
 library(lubridate)
 
 covid <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
+
 summit <- covid %>% filter(county=="Summit" & state=="Colorado")
 pitkin <- covid %>% filter(county=="Pitkin" & state=="Colorado")
 eagle <- covid %>% filter(county=="Eagle" & state=="Colorado")
 san_miguel <- covid %>% filter(county=="San Miguel" & state=="Colorado")
 gunnison <- covid %>% filter(county=="Gunnison" & state =="Colorado")
 grand <- covid %>% filter(county=="Grand" & state=="Colorado")
+mesa <- covid %>% filter(county=="Mesa" & state=="Colorado")
+clear_creek <- covid %>% filter(county=="Clear Creek" & state=="Colorado")
 
 temp1 <- union(summit, pitkin)
 temp2 <- union(temp1, san_miguel)
 temp3 <- union(temp2, gunnison)
 temp4 <- union(temp3, grand)
+temp5 <- union(temp4, mesa)
+temp6 <- union(temp5, clear_creek)
 
-full_counties <- union(temp4, eagle)
+full_counties <- union(temp6, eagle)
 full_counties$new_cases <- c(NA, diff(full_counties$cases, lag = 1))
 filt_full_counties <- full_counties %>% filter(new_cases < 50 & new_cases > 0)
 
-last_30 <- full_counties %>% filter(date > as.Date("2020-06-29"))
+last_30 <- full_counties %>% filter(date > as.Date("2020-11-07"))
 last_30$new_cases <- c(NA, diff(last_30$cases, lag=1))
 filt_last_30 <- last_30 %>% filter(new_cases < 50 & new_cases > -5)
 ```
@@ -115,6 +120,82 @@ ggplotly(
 )
 ```
 
+Clear Creek County
+=====================================
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+- __This dashboard is not intended to provide medical advice!__  If you have questions about your symptoms, please consult with a physician.
+
+- __This dashboard is not intended to provide conclusions!__  If you want to draw conclusions on what you see here, that is up to you.
+
+- __There are sometimes negative numbers in the number of cases!__  This could be from a variety of reasons, including a case being removed from Summit County and assigned to a different county or even just a typo.  This dashboard presents the raw data and, without additional information, I am not correcting it in any way.
+
+- __There are sometimes no new cases!__  These show up as missing bars on the plot of the new cases for the last 30 days. While this frequently correlates with the weekends (see below), it also shows that there were no new positive tests for that day.  There are also occasional updates by the NY Times to the database, which can result in a few days data not being immediately updated.
+
+- The data herein have been obtained from the [New York Times Dataset](https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv), which is updated daily and available for free download.  This data is not impacted by the recent move from the CDC collection to the White House because the CDC data is specifically on hospitalization whereas this data is only on testing.  So it is not impacted by this move.
+
+- The blue lines represent a mathematical fit to the existing data. The grey shaded sections are the calculated uncertainty in that fit.
+
+- The data might not be updated over the weekend, or the counts might be artificially low due to less staff at the labs over the weekends.
+
+- I am maintaining this dashboard on my own and through no assistance or funding. It is open source and anyone is free to download it [here](https://github.com/cj2001/summit_county_covid).  Note that I have yet to add in automated updating, so this is still a manual process.
+
+- For any questions about this dashboard, please contact @cjisalock on Twitter (keep it respectful or you will be blocked!).
+
+Column 
+-----------------------------------------------------------------------
+
+### Total Year to Date Cases
+
+```{r}
+full_counties_clear_creek <- filt_full_counties %>% filter(county=="Clear Creek")
+ggplotly(
+  ggplot(data = full_counties_clear_creek, aes(x=date, y=cases)) +
+    geom_point(mapping = aes(x=date, y=cases)) + 
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+
+```
+
+
+### Total Cases for the Last 30 Days
+
+```{r}
+last_30_clear_creek <- filt_last_30 %>% filter(county=="Clear Creek" & new_cases > -5 & new_cases < 50)
+ggplotly(
+  ggplot(data = last_30_clear_creek, aes(x=date, y=cases)) + 
+    geom_point(mapping = aes(x=date, y=cases)) + 
+    geom_smooth(mapping = aes(x=date, y=cases)) +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+```
+
+Column 
+-----------------------------------------------------------------------
+
+### New Cases per Day
+
+```{r}
+ggplotly(
+  ggplot(data = full_counties_clear_creek, aes(x=date, y=new_cases, alpha=0.5)) + 
+    geom_point(mapping = aes(x=date, y=new_cases)) + 
+    geom_smooth(mapping = aes(x=date, y=new_cases)) +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+```
+
+### New Cases in the Last 30 Days
+
+```{r}
+type <- c(last_30_clear_creek$cases)
+ggplotly(
+  ggplot(data = last_30_clear_creek, aes(x=date, y=new_cases)) +
+  geom_bar(stat="identity", aes(fill = type), show.legend = FALSE) +
+  theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+```
+
 Grand County
 =====================================
 Column {.sidebar}
@@ -150,7 +231,6 @@ full_counties_grand <- filt_full_counties %>% filter(county=="Grand")
 ggplotly(
   ggplot(data = full_counties_grand, aes(x=date, y=cases)) +
     geom_point(mapping = aes(x=date, y=cases)) + 
-    stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
     theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 )
 
@@ -230,7 +310,6 @@ full_counties_gunnison <- full_counties %>% filter(county=="Gunnison" & new_case
 ggplotly(
   ggplot(data = full_counties_gunnison, aes(x=date, y=cases)) +
     geom_point(mapping = aes(x=date, y=cases)) + 
-    stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
     theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 )
 
@@ -306,11 +385,10 @@ Column
 ### Total Year to Date Cases
 
 ```{r}
-full_counties_eagle <- full_counties %>% filter(county=="Eagle")
+full_counties_eagle <- full_counties %>% filter(county=="Eagle" & new_cases > -10)
 ggplotly(
   ggplot(data = full_counties_eagle, aes(x=date, y=cases)) +
     geom_point(mapping = aes(x=date, y=cases)) + 
-    stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
     theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 )
 
@@ -354,6 +432,85 @@ ggplotly(
 )
 ```
 
+Mesa County
+=====================================
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+- __Note for Gunnison County:__ There was one point around June 28th that was a clear outlier for this county that made visualization of the data complicated.  This data point has been removed as an outlier to account for this one data point.  It remains in the raw data for inspection.
+
+- __This dashboard is not intended to provide medical advice!__  If you have questions about your symptoms, please consult with a physician.
+
+- __This dashboard is not intended to provide conclusions!__  If you want to draw conclusions on what you see here, that is up to you.
+
+- __There are sometimes negative numbers in the number of cases!__  This could be from a variety of reasons, including a case being removed from Summit County and assigned to a different county or even just a typo.  This dashboard presents the raw data and, without additional information, I am not correcting it in any way.
+
+- __There are sometimes no new cases!__  These show up as missing bars on the plot of the new cases for the last 30 days. While this frequently correlates with the weekends (see below), it also shows that there were no new positive tests for that day.  There are also occasional updates by the NY Times to the database, which can result in a few days data not being immediately updated.
+
+- The data herein have been obtained from the [New York Times Dataset](https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv), which is updated daily and available for free download.  This data is not impacted by the recent move from the CDC collection to the White House because the CDC data is specifically on hospitalization whereas this data is only on testing.  So it is not impacted by this move.
+
+- The blue lines represent a mathematical fit to the existing data. The grey shaded sections are the calculated uncertainty in that fit.
+
+- The data might not be updated over the weekend, or the counts might be artificially low due to less staff at the labs over the weekends.
+
+- I am maintaining this dashboard on my own and through no assistance or funding. It is open source and anyone is free to download it [here](https://github.com/cj2001/summit_county_covid).  Note that I have yet to add in automated updating, so this is still a manual process.
+
+- For any questions about this dashboard, please contact @cjisalock on Twitter (keep it respectful or you will be blocked!).
+
+
+Column 
+-----------------------------------------------------------------------
+
+### Total Year to Date Cases
+
+```{r}
+full_counties_mesa <- full_counties %>% filter(county=="Mesa" & new_cases < 50 & new_cases > -5)
+ggplotly(
+  ggplot(data = full_counties_mesa, aes(x=date, y=cases)) +
+    geom_point(mapping = aes(x=date, y=cases)) + 
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+
+```
+
+
+### Total Cases for the Last 30 Days
+
+```{r}
+last_30_mesa <- last_30 %>% filter(county=="Mesa" & new_cases < 50 & new_cases > -5)
+ggplotly(
+  ggplot(data = last_30_gunnison, aes(x=date, y=cases)) + 
+    geom_point(mapping = aes(x=date, y=cases)) + 
+    geom_smooth(mapping = aes(x=date, y=cases)) +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+```
+
+Column 
+-----------------------------------------------------------------------
+
+### New Cases per Day
+
+```{r}
+ggplotly(
+  ggplot(data = full_counties_mesa, aes(x=date, y=new_cases, alpha=0.5)) + 
+    geom_point(mapping = aes(x=date, y=new_cases)) + 
+    geom_smooth(mapping = aes(x=date, y=new_cases)) +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+```
+
+### New Cases in the Last 30 Days
+
+```{r}
+type <- c(last_30_mesa$cases)
+ggplotly(
+  ggplot(data = last_30_mesa, aes(x=date, y=new_cases)) +
+  geom_bar(stat="identity", aes(fill = type), show.legend = FALSE) +
+  theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+)
+```
+
 Pitkin County
 =====================================
 Column {.sidebar}
@@ -390,7 +547,6 @@ full_counties_pitkin <- filt_full_counties %>% filter(county=="Pitkin")
 ggplotly(
   ggplot(data = full_counties_pitkin, aes(x=date, y=cases)) +
     geom_point(mapping = aes(x=date, y=cases)) + 
-    stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
     theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 )
 
@@ -469,7 +625,6 @@ full_counties_sm <- full_counties %>% filter(county=="San Miguel" & new_cases > 
 ggplotly(
   ggplot(data = full_counties_sm, aes(x=date, y=cases)) +
     geom_point(mapping = aes(x=date, y=cases)) + 
-    stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
     theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 )
 
@@ -543,11 +698,10 @@ Column
 ### Total Year to Date Cases
 
 ```{r}
-full_counties_summit <- full_counties %>% filter(county=="Summit")
+full_counties_summit <- full_counties %>% filter(county=="Summit" & new_cases > -5)
 ggplotly(
   ggplot(data = full_counties_summit, aes(x=date, y=cases)) +
     geom_point(mapping = aes(x=date, y=cases)) + 
-    stat_smooth(method="lm", formula = y ~ poly(x, 5), size=1) + 
     theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 )
 
